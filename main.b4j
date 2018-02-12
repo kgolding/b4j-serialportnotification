@@ -1,0 +1,96 @@
+﻿AppType=JavaFX
+Build1=Default,serialnotification.solutionbase.co.uk
+File1=617954.png
+File2=Blue.png
+File3=popup.bjl
+FileGroup1=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jsystemtray
+Library4=jserial
+NumberOfFiles=3
+NumberOfLibraries=4
+NumberOfModules=0
+Version=6.01
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	
+	Private Serial As Serial
+	Private Timer As Timer
+	Private Ports As List
+	
+	Private tray As SystemTray
+	Private Icon1 As TrayIcon
+	Private SerialImage As Image
+
+	Private lbl As Label
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	SerialImage = fx.LoadImage(File.DirAssets, "617954.png")
+	
+	tray.Initialize
+	Dim MenuItems() As String = Array As String("Exit")
+	Icon1.Initialize("Icon1", SerialImage, MenuItems)
+	Icon1.ToolTip = "Displays serial port notifiations when new port detected. Right click to show menu."
+	tray.AddTrayIcon(Icon1)
+	
+	Serial.Initialize("")
+	
+	Timer.Initialize("Timer", 1500)
+	Timer.Enabled = True
+	
+	Ports = Serial.ListPorts
+End Sub
+
+Sub Timer_Tick()
+	Dim pl As List = Serial.ListPorts
+	For i = 0 To pl.Size - 1
+		If Ports.IndexOf(pl.Get(i)) == -1 Then
+			Display(pl.Get(i))			
+		End If
+	Next
+	Ports = Serial.ListPorts
+End Sub
+
+Sub Display(text As String)
+	Dim popup As Form
+	popup.Initialize("popup", 140, 46)
+	popup.Icon = SerialImage
+	popup.AlwaysOnTop = True
+	popup.SetFormStyle("TRANSPARENT")
+	popup.BackColor = fx.Colors.Transparent
+	popup.RootPane.LoadLayout("popup")
+	popup.WindowLeft = fx.PrimaryScreen.MaxX - 140 - 10
+	popup.WindowTop = fx.PrimaryScreen.MaxY - 46 - 10
+	lbl.Text = text
+	popup.Show
+	popup.RootPane.Alpha = 0
+	popup.RootPane.SetAlphaAnimated(750, 1)
+	Wait For (popup.RootPane) popup_AnimationCompleted
+	Sleep(2000)
+	popup.RootPane.SetAlphaAnimated(750, 0)
+	Wait For (popup.RootPane) popup_AnimationCompleted
+	popup.Close
+End Sub
+
+Sub Icon1_MenuClick (Text As String)
+	Select Text
+		Case "Exit"
+			ExitApplication
+	End Select
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
